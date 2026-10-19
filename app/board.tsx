@@ -4,6 +4,15 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { choreColumns, isOverdue, localDate, sortChores, validateChore, type Chore, type Member } from "@/lib/chores";
 
+function dueDateLabel(dueDate: string, today: string) {
+  // Use the browser's calendar date, with fixed-length days for DST-safe differences.
+  const days = Math.round((new Date(`${dueDate}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) / 86_400_000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  if (days > 1) return `In ${days} days`;
+  return `${-days} ${days === -1 ? "day" : "days"} ago`;
+}
+
 export function Board({ roomId, userId, members, initialChores }: {
   roomId: string;
   userId: string;
@@ -125,7 +134,7 @@ export function Board({ roomId, userId, members, initialChores }: {
               <div className="chore-details">
                 <h3 className={chore.status === "done" ? "chore-done" : ""}>{chore.title}</h3>
                 {chore.description && <p className="chore-description">{chore.description}</p>}
-                <p>{assignee?.display_name ?? "Unassigned"} · Due <time dateTime={chore.due_date}>{chore.due_date}</time></p>
+                <p>{assignee?.display_name ?? "Unassigned"} · Due <time dateTime={chore.due_date}>{today ? dueDateLabel(chore.due_date, today) : chore.due_date}</time></p>
                 {today && isOverdue(chore, today) && <span className="overdue">Overdue</span>}
                 {chore.status === "done" && <p>Done{completedBy ? ` by ${completedBy.display_name}` : ""}{chore.completed_at && <> · <time dateTime={chore.completed_at}>{today ? new Date(chore.completed_at).toLocaleString("en-US") : chore.completed_at}</time></>}</p>}
                 {updateError?.id === chore.id && <div role="alert">

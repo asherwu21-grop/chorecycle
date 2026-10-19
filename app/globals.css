@@ -50,6 +50,11 @@ button.secondary { background: #f2f2ed; color: #111; border: 1px solid #77776f; 
 .chore-details h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
 .chore-details p { margin-bottom: 8px; }
 .chore-row > button { flex-shrink: 0; }
+.skeleton-row { min-height: 100px; }
+.skeleton-line, .skeleton-action { background: #e5e5dd; border-radius: 6px; }
+.skeleton-title { width: 65%; height: 20px; margin-bottom: 12px; }
+.skeleton-detail { width: 85%; height: 16px; }
+.skeleton-action { width: 96px; height: 48px; flex-shrink: 0; }
 .chore-done { text-decoration: line-through; }
 .chore-description { white-space: pre-wrap; }
 .overdue { display: inline-block; border-radius: 6px; padding: 4px 8px; color: #a51e1e; background: #fde8e8; font-size: .8rem; font-weight: 700; text-transform: uppercase; }
