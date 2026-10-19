@@ -10,7 +10,7 @@ import { BoardSkeleton } from "./components/board-skeleton";
 
 export default function Home() {
   return (
-    <Suspense fallback={<main className="shell" role="status">Loading ChoreCycle…</main>}>
+    <Suspense fallback={<main className="shell"><p role="status">Loading ChoreCycle…</p><BoardSkeleton /></main>}>
       <HomeContent />
     </Suspense>
   );
