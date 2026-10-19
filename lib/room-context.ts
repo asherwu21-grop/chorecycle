@@ -1,7 +1,10 @@
 import { cache } from "react";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const getRoomContext = cache(async () => {
+  // Auth checks read the current time internally and must run for a real request.
+  await connection();
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.getClaims();
