@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { choreColumns, type Chore, type Member } from "@/lib/chores";
 import { Board } from "./board";
 import { BoardSkeleton } from "./components/board-skeleton";
+import { JoinCode } from "./components/join-code";
 
 export default function Home() {
   return (
@@ -24,7 +25,10 @@ async function HomeContent() {
   return (
     <main className="shell">
       <p className="eyebrow">ChoreCycle</p>
-      <h1>{room.name}</h1>
+      <div className="room-heading">
+        <h1>{room.name}</h1>
+        <JoinCode code={room.join_code} />
+      </div>
       <SignOutButton />
       <Suspense fallback={<BoardSkeleton />}>
         <ChoreListData roomId={room.id} userId={userId} />

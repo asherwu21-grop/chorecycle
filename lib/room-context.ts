@@ -16,7 +16,7 @@ export const getRoomContext = cache(async () => {
     if (memberError) throw new Error(`Could not load your membership: ${memberError.message}`);
     if (!member) return { userId, room: null, error: null };
     const { data: room, error: roomError } = await supabase
-      .from("rooms").select("id, name").eq("id", member.room_id).single();
+      .from("rooms").select("id, name, join_code").eq("id", member.room_id).single();
     if (roomError) throw new Error(`Could not load your room: ${roomError.message}`);
     return { userId, room, error: null };
   } catch (error) {
