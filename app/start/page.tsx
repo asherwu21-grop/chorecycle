@@ -1,10 +1,19 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getRoomContext } from "@/lib/room-context";
 import { RequestError } from "../components/request-error";
 import { SignOutButton } from "../components/sign-out-button";
 import { RoomForm } from "./room-form";
 
-export default async function StartPage() {
+export default function StartPage() {
+  return (
+    <Suspense fallback={<main className="shell" role="status">Loading ChoreCycle…</main>}>
+      <StartContent />
+    </Suspense>
+  );
+}
+
+async function StartContent() {
   const { userId, room, error } = await getRoomContext();
   if (error) return <RequestError message={error} retry="/start" />;
   if (!userId) redirect("/login");
