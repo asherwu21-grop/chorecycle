@@ -20,11 +20,10 @@ async function StartContent() {
   if (room) redirect("/");
   return (
     <main className="shell">
-      <p className="eyebrow">ChoreCycle</p>
+      <header className="app-header"><p className="eyebrow"><span className="brand-mark" aria-hidden="true">↻</span>ChoreCycle</p><details className="header-menu"><summary aria-label="Room menu">•••</summary><SignOutButton /></details></header>
       <h1>Find your room</h1>
       <p>Create a room for your household, or get a join code from a roommate.</p>
       <RoomForm />
-      <SignOutButton />
     </main>
   );
 }

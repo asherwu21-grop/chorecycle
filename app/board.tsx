@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { choreColumns, isOverdue, localDate, sortChores, validateChore, type Chore, type Member } from "@/lib/chores";
 
@@ -11,6 +11,11 @@ function dueDateLabel(dueDate: string, today: string) {
   if (days === 1) return "Tomorrow";
   if (days > 1) return `In ${days} days`;
   return `${-days} ${days === -1 ? "day" : "days"} ago`;
+}
+
+const memberColors = ["#E4DDED", "#DCE6D5", "#F0DECB", "#D8E5ED", "#EFDADE", "#E6E4CA"];
+function memberStyle(index: number) {
+  return { "--member-color": memberColors[index % memberColors.length] } as CSSProperties;
 }
 
 export function Board({ roomId, userId, members, initialChores }: {
@@ -177,26 +182,27 @@ export function Board({ roomId, userId, members, initialChores }: {
   return (
     <section className="board" aria-label="Room chores">
       <div className="board-progress">
-        <label htmlFor="room-progress">{doneCount} of {chores.length} done</label>
+        <div className="progress-caption"><label htmlFor="room-progress">{doneCount} of {chores.length} done</label><span>{chores.length ? Math.round(doneCount / chores.length * 100) : 0}%</span></div>
         <progress id="room-progress" value={doneCount} max={chores.length || 1} />
       </div>
       <div className="board-heading">
-        <h2>Chores</h2>
-        <button ref={addButton} onClick={(event) => openSheet(null, event.currentTarget)}>Add chore</button>
+        <h2>Chores<span className="chore-count">{chores.length}</span></h2>
+        <button className="add-chore" ref={addButton} onClick={(event) => openSheet(null, event.currentTarget)}><span aria-hidden="true">+</span>Add chore</button>
       </div>
       <p role="status" className="success">{success}</p>
-      <div className="filter-chips" role="group" aria-label="Filter chores">
+      <div className="filter-chips" role="group" aria-label="Filter chores"><div className="status-filters">
         {(["all", "pending", "done"] as const).map((status) => (
           <button key={status} className="secondary" aria-pressed={statusFilter === status} onClick={() => setStatusFilter(status)}>
             {status === "all" ? "All" : status === "pending" ? "Pending" : "Done"}
           </button>
         ))}
-        {members.map((member) => (
-          <button key={member.id} className="secondary" aria-pressed={memberFilter === member.id} onClick={() => setMemberFilter(memberFilter === member.id ? null : member.id)}>
-            {member.display_name}
+        </div><div className="member-filters">
+        {members.map((member, index) => (
+          <button key={member.id} className="member-chip" style={memberStyle(index)} aria-pressed={memberFilter === member.id} onClick={() => setMemberFilter(memberFilter === member.id ? null : member.id)}>
+            <span className="avatar" aria-hidden="true">{member.display_name.slice(0, 1).toUpperCase()}</span>{member.display_name}
           </button>
         ))}
-      </div>
+      </div></div>
       {updateError && <div role="alert">
         <p className="error">{updateError.message}</p>
         <button className="secondary" disabled={!!updating || saving || deleting} onClick={() => {
@@ -205,6 +211,7 @@ export function Board({ roomId, userId, members, initialChores }: {
         }}>Try again</button>
       </div>}
       {chores.length === 0 ? <div className="empty-state">
+        <span className="empty-mark" aria-hidden="true">↻</span>
         <p>No chores yet. Add the first one.</p>
         <button onClick={(event) => openSheet(null, event.currentTarget)}>Add chore</button>
       </div> : visibleChores.length === 0 && <div className="empty-state">
@@ -216,19 +223,18 @@ export function Board({ roomId, userId, members, initialChores }: {
           const assignee = members.find((member) => member.id === chore.assignee_id);
           const completedBy = members.find((member) => member.id === chore.completed_by);
           return (
-            <li key={chore.id} className="chore-row">
+            <li key={chore.id} className={`chore-row${chore.status === "done" ? " is-done" : ""}`}>
               <div className="chore-details">
                 <button className="chore-edit" aria-label={`Edit chore: ${chore.title}`} disabled={!!updating || saving || deleting} onClick={(event) => openSheet(chore, event.currentTarget)}>
                 <span className={chore.status === "done" ? "chore-done" : ""}>{chore.title}</span>
-                {chore.description && <span className="chore-description">{chore.description}</span>}
-                <span>{assignee?.display_name ?? "Unassigned"} · Due <time dateTime={chore.due_date}>{today ? dueDateLabel(chore.due_date, today) : chore.due_date}</time></span>
+                <span className="chore-meta">{assignee && <span className="avatar" style={memberStyle(members.indexOf(assignee))} aria-hidden="true">{assignee.display_name.slice(0, 1).toUpperCase()}</span>}{assignee?.display_name ?? "Unassigned"}<span aria-hidden="true">·</span><time dateTime={chore.due_date}>{today ? dueDateLabel(chore.due_date, today) : chore.due_date}</time></span>
                 {today && isOverdue(chore, today) && <span className="overdue">Overdue</span>}
-                {chore.status === "done" && <span>Done{completedBy ? ` by ${completedBy.display_name}` : ""}{chore.completed_at && <> · <time dateTime={chore.completed_at}>{today ? new Date(chore.completed_at).toLocaleString("en-US") : chore.completed_at}</time></>}</span>}
+                {chore.status === "done" && <span className="completion-meta">Done{completedBy ? ` by ${completedBy.display_name}` : ""}{chore.completed_at && <> · <time dateTime={chore.completed_at}>{today ? new Date(chore.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : chore.completed_at}</time></>}</span>}
                 </button>
               </div>
-              <button className="secondary" disabled={!!updating || saving || deleting} aria-label={`${chore.status === "done" ? "Reopen" : "Mark done"}: ${chore.title}`} onClick={() => changeStatus(chore)}>
+              <button className={`check-button${chore.status === "done" ? " checked" : ""}`} disabled={!!updating || saving || deleting} aria-label={`${chore.status === "done" ? "Reopen" : "Mark done"}: ${chore.title}`} onClick={() => changeStatus(chore)}>
                 {updating === chore.id && <span className="spinner" aria-hidden="true" />}
-                {chore.status === "done" ? "Reopen" : "Mark done"}
+                {updating !== chore.id && chore.status === "done" && <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="m5 12 4 4 10-10" /></svg>}
               </button>
             </li>
           );
