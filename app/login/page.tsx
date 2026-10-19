@@ -8,7 +8,7 @@ type LoginPageProps = { searchParams: Promise<{ error?: string }> };
 
 export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
-    <Suspense fallback={<main className="shell" role="status">Loading ChoreCycle…</main>}>
+    <Suspense fallback={<main className="shell auth-shell" role="status">Loading ChoreCycle…</main>}>
       <LoginContent searchParams={searchParams} />
     </Suspense>
   );
@@ -20,7 +20,8 @@ async function LoginContent({ searchParams }: LoginPageProps) {
   if (userId) redirect(room ? "/" : "/start");
   const params = await searchParams;
   return (
-    <main className="shell">
+    <main className="shell auth-shell">
+      <span className="brand-mark login-mark" aria-hidden="true">↻</span>
       <h1>ChoreCycle</h1>
       <p>Share chores with your roommates.</p>
       <LoginForm confirmationError={params.error} />

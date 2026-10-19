@@ -24,12 +24,11 @@ async function HomeContent() {
   if (!room) redirect("/start");
   return (
     <main className="shell">
-      <p className="eyebrow">ChoreCycle</p>
+      <header className="app-header"><p className="eyebrow"><span className="brand-mark" aria-hidden="true">↻</span>ChoreCycle</p><details className="header-menu"><summary aria-label="Room menu">•••</summary><SignOutButton /></details></header>
       <div className="room-heading">
         <h1>{room.name}</h1>
         <JoinCode code={room.join_code} />
       </div>
-      <SignOutButton />
       <Suspense fallback={<BoardSkeleton />}>
         <ChoreListData roomId={room.id} userId={userId} />
       </Suspense>
