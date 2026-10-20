@@ -27,10 +27,14 @@ export function RoomForm() {
     setPending(true);
     try {
       const supabase = createClient();
-      const { error } = mode === "create"
+      const { data, error } = mode === "create"
         ? await supabase.rpc("create_room", { name: roomName, display_name: displayName })
         : await supabase.rpc("join_room", { code, display_name: displayName });
       if (error) throw new Error(error.message);
+      const room = Array.isArray(data) ? data[0] : data;
+      if (mode === "join" && !room?.id) {
+        throw new Error("No room matches that join code");
+      }
       router.replace("/");
       router.refresh();
     } catch (error) {
