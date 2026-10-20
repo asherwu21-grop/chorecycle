@@ -1,37 +1,61 @@
 # ChoreCycle
 
-Shared chores for roommates, built with Next.js and Supabase.
+A shared chore board for college roommates. Create a room, share the join code, and everyone in the room sees one list of chores: add a chore, assign it to a roommate, set a due date, mark it done, and filter by status or person. Overdue chores are marked clearly.
+
+**Live app:** https://chorecycle-gamma.vercel.app
+
+Built for the Technify SWE training, mostly with a coding agent (Codex), working from a written spec ([SPEC.md](SPEC.md)) and agent rules ([AGENTS.md](AGENTS.md)).
+
+## How to use it
+1. Sign up with an email and password.
+2. Create a room (room name and your display name), or join one with a six-character code from a roommate.
+3. Add chores, tick them off, reopen them, filter the list. The join code is in the board header with a copy button, so you can invite others.
+
+## How it works
+Three parts:
+
+| Part | What it does |
+|---|---|
+| Frontend | Next.js (App Router) and TypeScript with Tailwind CSS, hosted on Vercel. Server pages check the signed-in user and send people to `/login`, `/start` (create or join a room) or `/` (the board). |
+| Backend | Supabase Auth for sign-up and sign-in. Two database functions, `create_room` and `join_room`, handle entering a room. A small proxy in Next.js refreshes session cookies. |
+| Database | Supabase Postgres with three tables: `rooms`, `members` and `chores`. |
+
+Adding a chore, step by step: the browser sends an insert to Supabase with the user's login token, Postgres checks the row level security policy (is this user a member of the chore's room, and is the assignee a member of the same room?), the row is saved, and the board reloads the list.
+
+## Security model
+- **Who can see what:** only members of a room can see its members and chores. Any member can add, edit, complete, reopen and delete chores in their own room. Roommates are trusted with each other's chores.
+- **Enforced in the database:** row level security is on for every table. Hiding buttons in the UI is never the only protection. Policies use a `security definer` helper, `is_room_member`, with an empty `search_path`.
+- **Entering a room:** clients cannot insert into `rooms` or `members` directly. `create_room` and `join_room` do it, and `join_room` is the only way to look a room up by its code, so codes cannot be listed.
+- **Keys:** the app uses only the Supabase URL and the publishable key, which are safe in the browser because row level security limits what they can reach. No secret or service-role key is used or committed. `.env.local` is git-ignored.
+- **Review:** an automated review of the code against the spec found two issues (inconsistent completion data, and guessable join codes). Both were fixed in follow-up migrations rather than by editing the first one.
+
+Known limits: join-code attempts are limited per account, which slows guessing but does not stop someone who creates many accounts. A user belongs to one room.
+
+## Database migrations
+SQL files are in `supabase/migrations/`, numbered in the order they were applied:
+1. Tables, row level security policies, `is_room_member`, `create_room`, `join_room`.
+2. Checks that completion data is consistent and belongs to the same room.
+3. Larger join-code alphabet and a limit on failed join attempts.
+
+Supabase does not apply these when code is pushed. Each file is pasted into the Supabase SQL editor by hand.
 
 ## Local setup
-
-1. Install dependencies with `npm ci`.
-2. Set these two public variables in the git-ignored `.env.local` file:
-   ```dotenv
+1. `npm ci`
+2. Create a Supabase project and apply the migrations in order.
+3. Create `.env.local` with:
+   ```
    NEXT_PUBLIC_SUPABASE_URL=your-project-url
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-project-publishable-key
    ```
-3. Apply `supabase/migrations/001_init.sql` to your Supabase project if step 1 has not already been applied. It defines the tables, RLS policies, and `create_room` / `join_room` RPCs.
-4. In Supabase Authentication, enable the Email provider. Set the Site URL and allow `http://localhost:3000/auth/callback` under Redirect URLs. Add the equivalent HTTPS callback URL for your deployed site. The standard confirmation email template uses `{{ .ConfirmationURL }}`. Keep that template when using this PKCE callback.
-5. Run `npm run dev` and open http://localhost:3000.
+4. In Supabase, Authentication: enable the Email provider. For quick sign-up, turn off "Confirm email". Set the Site URL, and add `http://localhost:3000/**` and your deployed URL with `/**` to Redirect URLs.
+5. `npm run dev`, then open http://localhost:3000
 
-When email confirmation is enabled, follow the confirmation link in the same browser used to sign up so the PKCE verifier cookie is available. Confirmation failures appear on `/login`; after confirming an account, you can also sign in with its email and password.
+On Vercel, set the same two variables in the project's environment settings. Never add a secret key to this app.
 
-For Vercel, set the same two public environment variables in project settings before deploying. Never set a privileged Supabase key in this app. Restart the local server or redeploy after changing environment variables.
+Checks: `npm run lint` and `npm run build`. If Turbopack cannot start in a restricted environment, `npm run build -- --webpack` uses the alternate bundler.
 
-## Step 2 behavior
+## Not built (on purpose)
+Recurring chores, notifications, points, photos, AI features, roles, leaving or deleting a room, multiple rooms per user, realtime updates and dark mode. The goal was a small app that works end to end.
 
-- `/login`: email/password sign up and sign in, inline errors and email-confirmation feedback.
-- `/start`: create a room or join by its six-character code, with a required display name. Room entry uses the existing database RPCs; database RLS enforces access.
-- `/`: shows the signed-in user's room name. The chore board is a later build step.
-- Server pages verify auth claims and membership: signed-out users go to `/login`, users without a room go to `/start`, and room members go to `/`. The Next.js proxy refreshes session cookies.
-
-## Checks
-
-```sh
-npm run build
-npm run lint
-```
-
-If Turbopack cannot bind its internal worker port in a restricted environment, `npm run build -- --webpack` runs the alternate production bundler. Both builders may need network access for the existing Google fonts.
-
-To check the live setup, use two accounts: create a room with the first account, join with the second using the room's `join_code` from the Supabase dashboard, and confirm both land on the same room name after reloading. Also check a wrong join code, wrong password, email confirmation, and sign out. The board header that displays the code is outside step 2.
+## How it was built
+Work was split into small steps, each on its own branch and merged by pull request: database and security rules, sign-in and rooms, the chore board, edit/delete/filters, a design pass, and a review step. See the [pull requests](https://github.com/asherwu21-grop/chorecycle/pulls) and the commit history.
